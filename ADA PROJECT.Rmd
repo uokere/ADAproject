@@ -1,0 +1,272 @@
+---
+title: "project"
+author: "UOkere"
+date: "4/20/2020"
+output: html_document
+---
+## Retrieving file from document
+```{r}
+library(foreign)
+# file.choose()
+```
+
+## Reading and attaching data
+```{r}
+dataset = read.spss("C:\\Users\\Okere Charles Uzoma\\OneDrive\\Documents\\teen_diet_public_updatedMERGED.sav", to.data.frame=TRUE)
+attach (dataset)
+```
+
+## Installing packages, looking at data, cleaning data
+```{r}
+#installing the package
+#install.packages("statsr")
+#loading the package and data
+library(statsr)
+data("dataset")
+
+#looking at data
+summary(dataset)
+```
+
+```{r}
+dataset <- subset(dataset, select = c("XTBMI", "TSEX", "TAGE", "XTJUNKFOOD_FREQ_TC", "XTSSB_FREQ_TC", "XTJUNK_SSB_FREQ_TC"))
+dataset <- na.omit(dataset) ## omitting missing values in selected variables in dataset
+
+```
+
+## checking class and converting variable class to numeric
+```{r}
+
+class (dataset$XTBMI)
+class (dataset$XTJUNKFOOD_FREQ_TC)
+class (dataset$XTSSB_FREQ_TC)
+class (dataset$XTJUNK_SSB_FREQ_TC)
+class(dataset$TSEX)
+class (dataset$TAGE)
+
+#they are factors, make them numeric
+dataset$XTBMI<-as.numeric(as.character(dataset$XTBMI))
+class(dataset$XTBMI)#check again
+
+
+dataset$XTJUNKFOOD_FREQ_TC<-as.numeric(as.character(dataset$XTJUNKFOOD_FREQ_TC))
+class(dataset$XTJUNKFOOD_FREQ_TC)#check again
+
+dataset$XTSSB_FREQ_TC<-as.numeric(as.character(dataset$XTSSB_FREQ_TC))
+class(dataset$XTSSB_FREQ_TC)#check again
+
+dataset$XTJUNK_SSB_FREQ_TC<-as.numeric(as.character(dataset$XTJUNK_SSB_FREQ_TC))
+class(dataset$XTJUNK_SSB_FREQ_TC)#check again
+
+```
+
+## visualizing data
+### There appears to be no relationship between junk food consumption and BMI.
+```{r}
+#load tidyverse
+library(tidyverse)
+## Visualizing the relationships
+
+#plot the relationship between junkfood consumption and BMI
+ggplot(dataset, aes(y = XTBMI, x = XTJUNKFOOD_FREQ_TC)) + 
+  geom_smooth(method = "lm", se = FALSE, na.rm = T) +
+  geom_jitter(na.rm = T) +
+  geom_point(na.rm = T, size = 2, alpha = .2) + 
+  labs(title = "Junk Consumption and BMI",
+       y = "BMI (kg/m2)",
+       x = "junk food Consumption (dly freq)") +
+  theme_bw()
+```
+
+## The relationship appears to be slight positive relationship between sugar-sweetened beverage consumption and BMI.
+```{r}
+#plot the relationship between sugarsweetened bevrage consumption and BMIpercentile
+ggplot(dataset, aes(y = XTBMI, x = XTSSB_FREQ_TC)) + 
+  geom_smooth(method = "lm", se = FALSE, na.rm = T) +
+  geom_jitter(na.rm = T) +
+  geom_point(na.rm = T, size = 2, alpha = .2) + 
+  labs(title = "SSB Consumption and BMI",
+       y = "BMI (kg/m2)",
+       x = "SSB food Consumption (dly freq)") +
+  theme_bw()
+```
+
+## The relationship appears to be slight positive relationship between junk and sugar-sweetened beverage consumption and BMI.
+```{r}
+#plot the relationship between sugarsweetened bevrage consumption and BMIpercentile
+ggplot(dataset, aes(y = XTBMI, x = XTJUNK_SSB_FREQ_TC)) + 
+  geom_smooth(method = "lm", se = FALSE, na.rm = T) +
+  geom_jitter(na.rm = T) +
+  geom_point(na.rm = T, size = 2, alpha = .2) + 
+  labs(title = "JunkfoodnSB Consumption and BMI",
+       y = "BMI (kg/m2)",
+       x = "JunkfoodnSSB food Consumption (dly freq)") +
+  theme_bw()
+```
+
+## Multivariate linear model, outcome is is BMI and our predictor of interest is dly freq of junk food consumption. Confounders are age and sex
+### Junk food intake was not a significant predictor, p>0.05. Therefore fail to reject the null hypothesis that daily junk food intake has no positive association with higher BMI.
+#### For a unit change in junk food intake, the mean BMI changes by 0.015.
+#### Model with junk food intake, age and sex explains 4.6% variability in the BMI.
+#### The model is better than the mean/null model at explaining variation in the outcome. F (7,1530)= 10.48, p value < .05, so reject the null that the model is the same as the null model in terms of its ability to explain the outcome-BMI.
+
+
+```{r}
+# Model 1 with junk food intake, age and sex.
+BMI.mod <- lm(XTBMI ~ XTJUNKFOOD_FREQ_TC + TSEX + TAGE, data = dataset)
+summary(BMI.mod)
+```
+
+## Multivariate linear model, outcome is is BMI and our predictor of interest is dly freq of sugar-sweetened beverage consumption. Confounders are age and sex.
+### dly freq of sugar-sweetened beverage consumption was a significant predictor, p<0.05. Therefore reject the null hypothesis that sugar-sweetened beverage intake has no positive association with higher BMI percentile.
+#### For a unit change in sugar-sweetened beverage intake, the mean BMI increases by 0.29.
+#### Model with sugar-sweetened beverage intake, age and sex explains 5.1% variability in BMI. 
+#### The model is better than the mean/null model at explaining variation in the outcome. F (7,1520)= 11.77, p value < .05, so reject the null that the model is the same as the null model in terms of its ability to explain the outcome-BMI.
+
+```{r}
+# Model 2 with SSB intake, age and sex.
+BMI.mod1 <- lm(XTBMI ~ XTSSB_FREQ_TC + TSEX + TAGE, data = dataset)
+summary(BMI.mod1)
+```
+
+## Multivariate linear model, outcome is is BMI and our predictor of interest is the combined dly freq of junk food and SSB consumption. Cofounders are age and sex.
+### Combination of Junk food intake and SSB was not a significant predictor, p> 0.05. Therefore fail to reject the null hypothesis that daily junk food and SSB intake has no positive association with higher BMI percentile.
+#### For a unit change in combined junk and sugar-sweetened beverage intake, the mean BMI changes by 0.10. 
+#### Model with junk food and SSB intake, age and sex explains 4.7% variability in the outcome.
+#### The model is better than the mean/null model at explaining variation in the outcome. p value < .05, so reject the null that the model is the same as the null model in terms of its ability to explain the outcome-BMI.
+
+```{r}
+# Model 3 with Junk food and SSB intake, age and sex.
+BMI.mod2 <- lm(XTBMI ~ XTJUNK_SSB_FREQ_TC + TSEX + TAGE, data = dataset)
+summary(BMI.mod2)
+```
+
+## Confidence intervals for the models
+### Based on C.I, fail to reject the null hypothesis for Junk food intake and combined junk food and SSB consumption as C.Is contain 0. C.I for SSB does not contain 0, so reject the null hypothesis.
+```{r}
+# C.I for model 1
+confint(BMI.mod)
+# C.I for model 2
+confint(BMI.mod1)
+# C.I for model 3
+confint(BMI.mod2)
+
+```
+
+
+# Assumptions
+## First, there needs to be a linear relationship between predicted values and residuals.
+```{r echo= FALSE, results = 'hide'}
+
+# model 1
+dataset$predicted <- predict(BMI.mod)
+dataset$residuals <- residuals(BMI.mod)
+# model 2
+dataset$predicted2 <- predict(BMI.mod1)
+dataset$residuals2 <- residuals(BMI.mod1)
+# model 3
+dataset$predicted3 <- predict(BMI.mod2)
+dataset$residuals3 <- residuals(BMI.mod2)
+
+#print residuals
+
+```
+
+## Checking linearity
+```{r error = FALSE, message = FALSE, warning =  FALSE, echo=FALSE}
+# check linearity of plot of residuals and predicted values 
+ggplot(dataset, aes(y = residuals, x = predicted)) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(se = FALSE) +
+  geom_point(size = 2, alpha = .2) + 
+  labs(y = "Residuals (unexplained variability)",
+       x = "Predicted BMI") + theme_bw() + 
+  ggtitle("Residuals and predicted values")
+```
+
+# Checking indepedence
+### Assumption of independence of errors for model 1, model 2 and model 3 were met. DW is normal
+```{r}
+#install.packages("lmtest")
+# test the residuals for independence 
+library(lmtest)
+#check residuals for independence for model 1
+dwtest(BMI.mod)
+#check residuals for independence for model 1
+dwtest(BMI.mod1)
+#check residuals for independence for model 1
+dwtest(BMI.mod2)
+```
+
+## check normality of residuals using the Shapiro-Wilk test
+## p < 0.05, so residuals are not normally distributed. Assumption not met.
+```{r}
+# check normality statistically with the Shapiro-Wilk test
+shapiro.test(dataset$residuals)
+```
+
+# Checking homoscedasticity
+### for all models, p > 0.05, so fail to reject the null hypothesis that variance IS constant.
+```{r}
+# check homoscedasticity with bp test
+# model 1
+bptest(BMI.mod)
+# model 2
+bptest(BMI.mod1)
+# for model 3
+bptest(BMI.mod2)
+```
+
+## multicolinearity
+### No multicolinearity detected in the 3 models.
+```{r}
+# model 1
+car::vif(BMI.mod)
+# model 2
+car::vif(BMI.mod1)
+# model 3
+car::vif(BMI.mod2)
+```
+
+## Interaction
+### First visualizing the scatter plots
+```{r}
+# Plot the data, using different colours for male(red)/female(blue)
+# scatter plot for males
+ggplot(data = subset(dataset, TSEX=="Male"), aes(x = XTJUNKFOOD_FREQ_TC, y = XTBMI)) +
+  geom_point(na.rm = TRUE, aes(color = TSEX), alpha = .6, size = 4) +
+  labs(x = "dly freq of junk food intake",
+       y = "BMI",
+       title = "Scatterplot of Dly junk food intake by BMI among males",
+       subtitle = "Plot 1")
+# scatter plot for females
+ggplot(data = subset(dataset, TSEX=="Female"), aes(x = XTJUNKFOOD_FREQ_TC, y = XTBMI)) +
+  geom_point(na.rm = TRUE, color= "blue", alpha = .6, size = 4) +
+  labs(x = "dly freq of junk food intake",
+     y = "BMI",
+       title = "Scatterplot of Dly junk food food intake by BMI among females",
+       subtitle = "Plot 2")
+
+ggplot(data = dataset, aes(x = XTJUNKFOOD_FREQ_TC, y = XTBMI)) +
+  geom_point(na.rm = TRUE, aes(color = TSEX, shape = TSEX)) + 
+  labs(x = "dly freq of junk food intake", y = "BMI",
+       title = "Facet_Grid: Plot 3",
+       subtitle = "facet along columns, x-axes based on data") +
+  facet_grid(~ TSEX, scales = "free_x")
+```
+
+## Though it make sense conceptually for there to be a difference junk food intake and SSB intake between males and females. The interaction p values were not statistically significant, so I will not include the interaction term in the model.Therefore, fail to reject the null hypothesis that sex does not modify the effect of sugar-sweetened beverage, junk food consumption, on BMI.
+
+```{r}
+BMI.int <- lm(XTBMI ~ XTJUNKFOOD_FREQ_TC + TSEX + TAGE + XTJUNKFOOD_FREQ_TC:TSEX, data = dataset)
+summary(BMI.int)
+
+BMI.int1 <- lm(XTBMI ~ XTSSB_FREQ_TC + TSEX + TAGE + XTSSB_FREQ_TC:TSEX, data = dataset)
+summary(BMI.int1)
+
+BMI.int2 <- lm(XTBMI ~ XTSSB_FREQ_TC + XTJUNKFOOD_FREQ_TC + TSEX + TAGE + XTSSB_FREQ_TC: XTJUNKFOOD_FREQ_TC, data = dataset)
+summary(BMI.int2)
+library(car)
+vif(BMI.int2)
+```
+
